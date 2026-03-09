@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import '../theme/app_theme.dart';
+import '../services/mock_data_service.dart';
 
 // ── Data model ────────────────────────────────────────────────────────────────
 
@@ -133,6 +134,9 @@ class _CameraScreenState extends State<CameraScreen>
           _detectedColors = colors;
           _isAnalyzing = false;
         });
+        if (!_isLiveMode) {
+          _savePalette();
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _isAnalyzing = false);
@@ -285,7 +289,7 @@ class _CameraScreenState extends State<CameraScreen>
               ),
               const SizedBox(width: 8),
               const Text(
-                'ChromaLens',
+                'Rang',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -551,11 +555,31 @@ class _CameraScreenState extends State<CameraScreen>
 
   void _savePalette() {
     if (_detectedColors.isEmpty) return;
+    
+    final p = PaletteData(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: 'Scan - ${_detectedColors.first.name}',
+      colors: _detectedColors.map((c) => c.color).toList(),
+      createdAt: DateTime.now(),
+    );
+    MockDataService.instance.addPalette(p);
+    
+    final s = ScanResultData(
+      id: p.id,
+      title: 'Scan: ${p.name}',
+      timestamp: DateTime.now(),
+      colorCount: p.colors.length,
+      dominantColors: p.colors,
+      status: 'completed',
+      confidence: 0.95,
+    );
+    MockDataService.instance.addScan(s);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content:
             Text('Palette saved! (${_detectedColors.length} colors captured)'),
-        backgroundColor: AppTheme.primaryPurple,
+        backgroundColor: AppTheme.primary,
         behavior: SnackBarBehavior.floating,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

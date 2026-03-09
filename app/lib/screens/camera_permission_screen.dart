@@ -78,7 +78,7 @@ class CameraPermissionScreen extends StatelessWidget {
 
                       // Description
                       const Text(
-                        'ChromaLens needs camera access to analyze colors in real time and provide accurate palettes.',
+                        'Rang needs camera access to analyze and segment colors in real time.',
                         style: TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 15,
@@ -149,8 +149,7 @@ class CameraPermissionScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pushReplacementNamed(context, '/home'),
+                        onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               AppTheme.primaryPurple.withOpacity(0.1),
@@ -347,6 +346,8 @@ class CameraPermissionScreen extends StatelessWidget {
   }
 
   void _requestCameraPermission(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/home');
+    // Pop the permission screen and then push camera
+    Navigator.pop(context);
+    Navigator.pushNamed(context, '/camera');
   }
 }

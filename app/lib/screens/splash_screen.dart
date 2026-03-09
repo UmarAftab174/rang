@@ -1,20 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
 
-// Per-page theme data
-class _PageTheme {
-  final Color accent;
-  final IconData icon;
-  final String title;
-  final String description;
-  const _PageTheme({
-    required this.accent,
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
-}
-
+/// Auto-dismissing splash screen inspired by Instagram/Spotify.
+/// Shows for ~3 seconds with staggered animations, then navigates to /home.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,230 +14,261 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const Color _primary = Color(0xFF7B61FF);
-  static const Color _bg = Color(0xFF120F23);
+  static const Color _brand = AppTheme.primary;
+  static const Color _cyan = AppTheme.accent;
+  static const Color _bg = AppTheme.backgroundDark;
 
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  late AnimationController _entryController;
+  late AnimationController _exitController;
 
-  late AnimationController _pulseController;
-  late AnimationController _rotateController;
+  // Entry animations (staggered)
+  late Animation<double> _bgFade;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoFade;
+  late Animation<double> _ringRotate;
+  late Animation<double> _titleFade;
+  late Animation<Offset> _titleSlide;
+  late Animation<double> _subtitleFade;
+  late Animation<double> _footerFade;
 
-  static const List<_PageTheme> _pages = [
-    _PageTheme(
-      accent: _primary,
-      icon: Icons.blur_on,
-      title: 'ChromaLens',
-      description: 'See the world in color',
-    ),
-    _PageTheme(
-      accent: Color(0xFF06B6D4),
-      icon: Icons.colorize,
-      title: 'Color Detection',
-      description: 'Identify colors instantly with AI',
-    ),
-    _PageTheme(
-      accent: Color(0xFF10B981),
-      icon: Icons.camera_alt_rounded,
-      title: 'Camera Access',
-      description: 'Enable camera to analyze colors in real time',
-    ),
-  ];
+  // Exit animation
+  late Animation<double> _exitFade;
+
+  bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1800),
-      vsync: this,
-    )..repeat(reverse: true);
 
-    _rotateController = AnimationController(
-      duration: const Duration(seconds: 12),
+    // ── Entry: 2s staggered reveal ──
+    _entryController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat();
+    );
+
+    _bgFade = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.0, 0.3, curve: Curves.easeOut)),
+    );
+    _logoScale = Tween(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.1, 0.45, curve: Curves.elasticOut)),
+    );
+    _logoFade = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.1, 0.4, curve: Curves.easeOut)),
+    );
+    _ringRotate = Tween(begin: -0.15, end: 0.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.1, 0.5, curve: Curves.easeOut)),
+    );
+    _titleFade = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.35, 0.6, curve: Curves.easeOut)),
+    );
+    _titleSlide = Tween(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.35, 0.6, curve: Curves.easeOut)),
+    );
+    _subtitleFade = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.5, 0.75, curve: Curves.easeOut)),
+    );
+    _footerFade = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: const Interval(0.65, 0.9, curve: Curves.easeOut)),
+    );
+
+    // ── Exit: 400ms fade out ──
+    _exitController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _exitFade = Tween(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeIn),
+    );
+
+    // Start the show
+    _entryController.forward();
+
+    // Auto-navigate after 3 seconds
+    Future.delayed(const Duration(milliseconds: 3000), _startExit);
+  }
+
+  void _startExit() {
+    if (!mounted || _navigated) return;
+    _exitController.forward().then((_) {
+      if (!mounted || _navigated) return;
+      _navigated = true;
+      Navigator.pushReplacementNamed(context, '/home');
+    });
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _pulseController.dispose();
-    _rotateController.dispose();
+    _entryController.dispose();
+    _exitController.dispose();
     super.dispose();
-  }
-
-  void _onSkip() {
-    Navigator.pushReplacementNamed(context, '/home');
-  }
-
-  void _onGetStarted() {
-    if (_currentPage < _pages.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      Navigator.pushReplacementNamed(context, '/home');
-    }
-  }
-
-  void _onSignIn() {
-    Navigator.pushNamed(context, '/signin');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: Stack(
-        children: [
-          // Background gradient blobs
-          _buildBackground(),
-          // Content
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                children: [
-                  // Skip button row
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _onSkip,
-                      style: TextButton.styleFrom(
-                        foregroundColor: _primary,
-                        shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text(
-                        'Skip',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // PageView
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (i) => setState(() => _currentPage = i),
-                      itemCount: _pages.length,
-                      itemBuilder: (context, i) => _buildPage(_pages[i], i),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (i) => _buildDot(i),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Get Started button
-                  SizedBox(
+      body: AnimatedBuilder(
+        animation: Listenable.merge([_entryController, _exitController]),
+        builder: (context, _) {
+          return FadeTransition(
+            opacity: _exitFade,
+            child: Stack(
+              children: [
+                // ── Background ──────────────────────────────────────
+                Opacity(opacity: _bgFade.value, child: _buildBackground()),
+
+                // ── Content ─────────────────────────────────────────
+                SafeArea(
+                  child: SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _onGetStarted,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primary,
-                        foregroundColor: Colors.white,
-                        shadowColor: _primary.withOpacity(0.4),
-                        elevation: 12,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        shape: const StadiumBorder(),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
+                    child: Column(
+                      children: [
+                        const Spacer(flex: 3),
+
+                        // Logo
+                        FadeTransition(
+                          opacity: _logoFade,
+                          child: ScaleTransition(
+                            scale: _logoScale,
+                            child: _buildLogo(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // Title
+                        SlideTransition(
+                          position: _titleSlide,
+                          child: FadeTransition(
+                            opacity: _titleFade,
+                          child: _buildTitle(),
                         ),
                       ),
-                      child: Text(
-                        _currentPage == 2 ? 'Allow Camera Access' : 'Get Started',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Sign in row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Already have an account? ',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _onSignIn,
+
+                      const SizedBox(height: 12),
+
+                      // Subtitle
+                      FadeTransition(
+                        opacity: _subtitleFade,
                         child: const Text(
-                          'Sign In',
+                          'AI-Powered Color Segmentation',
                           style: TextStyle(
-                            color: _primary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
+
+                      const Spacer(flex: 4),
+
+                      // Footer
+                      FadeTransition(
+                        opacity: _footerFade,
+                        child: Column(
+                          children: [
+                            // Loading indicator
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(
+                                  _brand.withOpacity(0.4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'RANG • COLOR SEGMENTATION',
+                              style: TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                ),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+
+  // ── Gradient mesh background ──────────────────────────────────────────────
 
   Widget _buildBackground() {
     return Stack(
       children: [
-        // Diagonal gradient overlay
-        Positioned.fill(
+        // Full screen dark base
+        Positioned.fill(child: Container(color: _bg)),
+        // Top-left purple glow
+        Positioned(
+          top: -100,
+          left: -100,
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [
-                  Color(0x26_7B61FF), // primary 15%
-                  Colors.transparent,
-                  Color(0x14_7B61FF), // primary 8%
-                ],
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [_brand.withOpacity(0.12), Colors.transparent],
               ),
             ),
           ),
         ),
-        // Top-left blob
+        // Bottom-right cyan glow
         Positioned(
-          top: -80,
-          left: -80,
+          bottom: -100,
+          right: -100,
           child: Container(
-            width: 320,
-            height: 320,
-            decoration: const BoxDecoration(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [Color(0x33_7B61FF), Colors.transparent],
+                colors: [_cyan.withOpacity(0.08), Colors.transparent],
               ),
             ),
           ),
         ),
-        // Bottom-right blob
+        // Top-right subtle cyan
         Positioned(
-          bottom: -80,
-          right: -80,
+          top: -50,
+          right: -50,
           child: Container(
-            width: 320,
-            height: 320,
-            decoration: const BoxDecoration(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [Color(0x3D_7B61FF), Colors.transparent],
+                colors: [_cyan.withOpacity(0.05), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+        // Bottom-left subtle purple
+        Positioned(
+          bottom: -50,
+          left: -50,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [_brand.withOpacity(0.06), Colors.transparent],
               ),
             ),
           ),
@@ -256,190 +277,85 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildPage(_PageTheme theme, int index) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Hero visual — aspect square
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: _buildHeroVisual(theme),
-          ),
-        ),
-        const SizedBox(height: 40),
-        // Title
-        Text(
-          theme.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Description
-        Text(
-          theme.description,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 17,
-            height: 1.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        // Page 3 extra: feature cards
-        if (index == 2) ...[
-          const SizedBox(height: 28),
-          _buildFeatureRow(
-            icon: Icons.visibility_outlined,
-            label: 'Live Viewfinder',
-            accent: theme.accent,
-          ),
-          const SizedBox(height: 12),
-          _buildFeatureRow(
-            icon: Icons.colorize_outlined,
-            label: 'Instant Hex Codes',
-            accent: theme.accent,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'You can change permissions anytime in Settings.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ],
-    );
-  }
+  // ── Logo: conic gradient iris ring + shutter icon ─────────────────────────
 
-  Widget _buildHeroVisual(_PageTheme theme) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_pulseController, _rotateController]),
-      builder: (context, _) {
-        final pulse = _pulseController.value;
-        final rotate = _rotateController.value * 2 * math.pi;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.accent.withOpacity(0.12),
-                Colors.transparent,
+  Widget _buildLogo() {
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Purple glow behind
+          Container(
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _brand.withOpacity(0.25),
+                  blurRadius: 40,
+                  spreadRadius: 0,
+                ),
               ],
             ),
-            border: Border.all(
-              color: theme.accent.withOpacity(0.20),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.accent.withOpacity(0.06),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Backdrop tint
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(23),
-                  color: _bg.withOpacity(0.45),
-                ),
-              ),
-              // Rotating dashed outer circle
-              SizedBox.expand(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Transform.rotate(
-                    angle: rotate,
-                    child: CustomPaint(
-                      painter: _DashedCirclePainter(
-                        color: theme.accent.withOpacity(0.35),
-                        strokeWidth: 3,
-                        dashCount: 20,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Inner static circle
-              SizedBox.expand(
-                child: Padding(
-                  padding: const EdgeInsets.all(52),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.accent.withOpacity(0.18),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Glow + icon
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.accent.withOpacity(0.45 + pulse * 0.25),
-                      blurRadius: 20 + pulse * 16,
-                      spreadRadius: 2 + pulse * 3,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  theme.icon,
-                  size: 110,
-                  color: theme.accent,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFeatureRow({
-    required IconData icon,
-    required String label,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: accent.withOpacity(0.08),
-        border: Border.all(color: accent.withOpacity(0.15), width: 1),
-      ),
-      child: Row(
-        children: [
+          // Outer frosted circle
           Container(
-            width: 36,
-            height: 36,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: accent.withOpacity(0.15),
+              shape: BoxShape.circle,
+              color: const Color(0xFF0F172A).withOpacity(0.50),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.08),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 25,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            child: Icon(icon, color: accent, size: 20),
           ),
-          const SizedBox(width: 14),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+          // Conic gradient ring
+          Transform.rotate(
+            angle: _ringRotate.value * 2 * math.pi,
+            child: SizedBox(
+              width: 128,
+              height: 128,
+              child: CustomPaint(
+                painter: _ConicGradientRingPainter(
+                  colors: const [_brand, _cyan, _brand, _cyan],
+                  strokeWidth: 3.5,
+                ),
+              ),
+            ),
+          ),
+          // Inner dark circle + icon
+          Container(
+            width: 118,
+            height: 118,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: _bg,
+            ),
+            child: Center(
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_brand, _cyan],
+                ).createShader(bounds),
+                child: const Icon(
+                  Icons.shutter_speed,
+                  size: 52,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],
@@ -447,76 +363,59 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildDot(int index) {
-    final isActive = index == _currentPage;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 24 : 8,
-      height: 8,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: isActive ? _primary : _primary.withOpacity(0.25),
-        boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: _primary.withOpacity(0.5),
-                  blurRadius: 6,
-                ),
-              ]
-            : null,
+  // ── Title ─────────────────────────────────────────────────────────────────
+
+  Widget _buildTitle() {
+    return ShaderMask(
+      shaderCallback: (bounds) => const LinearGradient(
+        colors: [Colors.white, Color(0xFFE2E8F0)], // subtle gradient
+      ).createShader(bounds),
+      child: Text(
+        'Rang',
+        style: GoogleFonts.nunito(
+          color: Colors.white,
+          fontSize: 52,
+          fontWeight: FontWeight.w800, // Extra bold for the smooth look
+          letterSpacing: -1.5,
+          height: 1.1,
+        ),
       ),
     );
   }
 }
 
-// Dashed circle painter
-class _DashedCirclePainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final int dashCount;
+// ── Conic gradient ring painter ─────────────────────────────────────────────
 
-  const _DashedCirclePainter({
-    required this.color,
+class _ConicGradientRingPainter extends CustomPainter {
+  final List<Color> colors;
+  final double strokeWidth;
+
+  const _ConicGradientRingPainter({
+    required this.colors,
     required this.strokeWidth,
-    required this.dashCount,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - strokeWidth;
-    final angleStep = 2 * math.pi / dashCount;
-    // Each dash covers half a step, gap covers other half
-    final dashAngle = angleStep * 0.5;
+    final radius = math.min(size.width, size.height) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
-    for (int i = 0; i < dashCount; i++) {
-      final start = angleStep * i;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start,
-        dashAngle,
-        false,
-        paint,
-      );
-    }
+    final gradient = SweepGradient(
+      startAngle: math.pi,
+      endAngle: math.pi * 3,
+      colors: colors,
+    );
+
+    final paint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawCircle(center, radius, paint);
   }
 
   @override
-  bool shouldRepaint(_DashedCirclePainter old) =>
-      old.color != color || old.dashCount != dashCount;
+  bool shouldRepaint(_ConicGradientRingPainter old) =>
+      old.strokeWidth != strokeWidth;
 }
-
-class OnboardingItem {
-  final String title;
-  final String description;
-  OnboardingItem({required this.title, required this.description});
-}
-

@@ -1,97 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-
-// ── Data model ────────────────────────────────────────────────────────────────
-
-class _Palette {
-  final String name;
-  final List<Color> colors;
-  final bool isFavorite;
-  final String timeAgo;
-
-  const _Palette({
-    required this.name,
-    required this.colors,
-    required this.timeAgo,
-    this.isFavorite = false,
-  });
-}
-
-const List<_Palette> _palettes = [
-  _Palette(
-    name: 'Ocean Sunset',
-    colors: [
-      Color(0xFFFF9E7D),
-      Color(0xFFFFCCBB),
-      Color(0xFF4A90E2),
-      Color(0xFF1A4B8E),
-      Color(0xFF0D2547),
-    ],
-    isFavorite: true,
-    timeAgo: '2d ago',
-  ),
-  _Palette(
-    name: 'Deep Forest',
-    colors: [
-      Color(0xFF2D4F1E),
-      Color(0xFF4B6F44),
-      Color(0xFF8FB339),
-      Color(0xFFD9E5D6),
-      Color(0xFF1B2615),
-    ],
-    timeAgo: '5d ago',
-  ),
-  _Palette(
-    name: 'Cyber Night',
-    colors: [
-      Color(0xFF00F5FF),
-      Color(0xFF7B61FF),
-      Color(0xFFFF00E5),
-      Color(0xFF120F23),
-      Color(0xFF1D1D42),
-    ],
-    timeAgo: '1w ago',
-  ),
-  _Palette(
-    name: 'Sahara Sands',
-    colors: [
-      Color(0xFFE8C07D),
-      Color(0xFFD4A373),
-      Color(0xFFFAEDCD),
-      Color(0xFFCCD5AE),
-      Color(0xFFFEFAE0),
-    ],
-    isFavorite: true,
-    timeAgo: '2w ago',
-  ),
-  _Palette(
-    name: 'Alps Winter',
-    colors: [
-      Color(0xFFFFFFFF),
-      Color(0xFFC0CFD1),
-      Color(0xFF6F8A91),
-      Color(0xFF2C3E50),
-      Color(0xFFBDC3C7),
-    ],
-    timeAgo: '3w ago',
-  ),
-  _Palette(
-    name: 'Floral Meadow',
-    colors: [
-      Color(0xFFFFD700),
-      Color(0xFFFF6B6B),
-      Color(0xFF4ECDC4),
-      Color(0xFFFF8C42),
-      Color(0xFF7B61FF),
-    ],
-    timeAgo: '1m ago',
-  ),
-];
+import '../services/mock_data_service.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isEmbedded;
+  const HomeScreen({super.key, this.isEmbedded = false});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -99,38 +14,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _activeFilter = 0;
-  int _activeNav = 1; // Library active
   final _filters = const ['Recent', 'Most Colors', 'Favorites', 'Collections'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/camera'),
-        backgroundColor: AppTheme.primaryPurple,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        child: const Icon(Icons.photo_camera, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: _buildBottomNav(),
       body: SafeArea(
+        bottom: false, // Let the global nav handle bottom safe area
         child: Column(
           children: [
             _buildHeader(),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.72,
-                ),
-                itemCount: _palettes.length,
-                itemBuilder: (context, index) =>
-                    _PaletteCard(palette: _palettes[index]),
+              child: ValueListenableBuilder<List<PaletteData>>(
+                valueListenable: MockDataService.instance.palettes,
+                builder: (context, palettes, _) {
+                  if (palettes.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No saved palettes yet.\\nScan some colors to get started!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemCount: palettes.length,
+                    itemBuilder: (context, index) =>
+                        _PaletteCard(palette: palettes[index]),
+                  );
+                },
               ),
             ),
           ],
@@ -145,27 +66,46 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // App bar row
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Row(
             children: [
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppTheme.primaryPurple,
+                  gradient: LinearGradient(
+                    colors: [AppTheme.primary, AppTheme.primary.withOpacity(0.7)],
+                  ),
                 ),
-                child: const Icon(Icons.palette, color: Colors.white, size: 20),
+                child: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Colors.white, Color(0xFFE0E0E0)],
+                  ).createShader(bounds),
+                  child: const Icon(Icons.shutter_speed, color: Colors.white, size: 20),
+                ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'ChromaLens',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.4,
-                ),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Palettes',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  Text(
+                    'Saved color extractions',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
               const Spacer(),
               Container(
@@ -187,11 +127,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Search bar
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.primaryPurple.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+              color: AppTheme.backgroundCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.primary.withOpacity(0.1)),
             ),
             child: TextField(
               style:
@@ -254,77 +195,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  Widget _buildBottomNav() {
-    const items = [
-      (label: 'Explore', icon: Icons.explore_outlined, activeIcon: Icons.explore),
-      (label: 'Library', icon: Icons.folder_special_outlined, activeIcon: Icons.folder_special),
-      (label: 'Generate', icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
-      (label: 'Settings', icon: Icons.settings_outlined, activeIcon: Icons.settings),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundDark,
-        border: Border(
-          top: BorderSide(color: AppTheme.primaryPurple.withOpacity(0.1)),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (i) {
-              final active = i == _activeNav;
-              final item = items[i];
-              return GestureDetector(
-                onTap: () => setState(() => _activeNav = i),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        active ? item.activeIcon : item.icon,
-                        color: active
-                            ? AppTheme.primaryPurple
-                            : AppTheme.textSecondary,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label.toUpperCase(),
-                        style: TextStyle(
-                          color: active
-                              ? AppTheme.primaryPurple
-                              : AppTheme.textSecondary,
-                          fontSize: 9,
-                          fontWeight: active
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ── Palette card ──────────────────────────────────────────────────────────────
 
 class _PaletteCard extends StatelessWidget {
   const _PaletteCard({required this.palette});
-  final _Palette palette;
+  final PaletteData palette;
 
   @override
   Widget build(BuildContext context) {

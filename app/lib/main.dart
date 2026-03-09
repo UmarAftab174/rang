@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/camera_permission_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'screens/camera_screen.dart';
+import 'screens/settings_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const ChromaLensApp());
+  runApp(const RangApp());
 }
 
-class ChromaLensApp extends StatelessWidget {
-  const ChromaLensApp({super.key});
+class RangApp extends StatelessWidget {
+  const RangApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ChromaLens',
+      title: 'Rang - Color Segmentation',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/permissions': (context) => const CameraPermissionScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const MainNavigationScreen(),
         '/camera': (context) => const CameraScreen(),
+        '/settings': (context) => const SettingsScreen(),
         '/signin': (context) => const SignInScreen(),
       },
     );

@@ -1,104 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// App-wide color theme for ChromaLens
+/// App-wide design system for Rang
 class AppTheme {
-  // Primary colors
-  static const Color primaryPurple = Color(0xFF8B5CF6);
-  static const Color primaryPurpleDark = Color(0xFF7C3AED);
-  static const Color primaryPurpleLight = Color(0xFFA78BFA);
-  
-  // Background colors
-  static const Color backgroundDark = Color(0xFF0A0A12);
-  static const Color backgroundCard = Color(0xFF1A1A2E);
-  static const Color backgroundCardLight = Color(0xFF2D2D4A);
-  
-  // Accent colors
+  AppTheme._();
+
+  // ── Brand Colors ────────────────────────────────────────────────────────────
+  static const Color primary = Color(0xFF7B61FF);
+  static const Color primaryDark = Color(0xFF6C4FE0);
+  static const Color primaryLight = Color(0xFF9D8AFF);
+  static const Color accent = Color(0xFF00F5D4);
+
+  // Legacy aliases (keep existing references working)
+  static const Color primaryPurple = primary;
+  static const Color primaryPurpleDark = primaryDark;
+  static const Color primaryPurpleLight = primaryLight;
+
+  // ── Background ──────────────────────────────────────────────────────────────
+  static const Color backgroundDark = Color(0xFF0A0A0F);
+  static const Color backgroundCard = Color(0xFF14142B);
+  static const Color backgroundCardLight = Color(0xFF1E1E3A);
+  static const Color backgroundElevated = Color(0xFF1A1A2E);
+
+  // ── Semantic Colors ─────────────────────────────────────────────────────────
   static const Color accentGreen = Color(0xFF10B981);
   static const Color accentCyan = Color(0xFF06B6D4);
   static const Color accentRed = Color(0xFFEF4444);
   static const Color accentOrange = Color(0xFFF59E0B);
-  
-  // Text colors
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
-  
-  // Gradients
+
+  // ── Text ────────────────────────────────────────────────────────────────────
+  static const Color textPrimary = Color(0xFFF1F5F9); // slate-100
+  static const Color textSecondary = Color(0xFF94A3B8); // slate-400
+  static const Color textMuted = Color(0xFF64748B);     // slate-500
+
+  // ── Spacing constants ───────────────────────────────────────────────────────
+  static const double radiusSm = 12;
+  static const double radiusMd = 16;
+  static const double radiusLg = 24;
+  static const double radiusXl = 28;
+  static const double radiusFull = 9999;
+
+  // ── Gradients ───────────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primaryPurpleDark, primaryPurple],
+    colors: [primaryDark, primary],
   );
-  
+
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, accent],
+  );
+
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [backgroundCard, Color(0xFF16162A)],
+    colors: [backgroundCard, Color(0xFF10102A)],
   );
-  
-  // Shadows
+
+  // ── Shadows ─────────────────────────────────────────────────────────────────
   static List<BoxShadow> primaryShadow = [
     BoxShadow(
-      color: primaryPurple.withOpacity(0.4),
+      color: primary.withOpacity(0.4),
       blurRadius: 20,
       offset: const Offset(0, 8),
     ),
   ];
-  
+
   static List<BoxShadow> glowShadow = [
     BoxShadow(
-      color: primaryPurple.withOpacity(0.3),
+      color: primary.withOpacity(0.3),
       blurRadius: 40,
       spreadRadius: 10,
     ),
   ];
-  
-  // Border
+
+  // ── Border ──────────────────────────────────────────────────────────────────
   static Border primaryBorder = Border.all(
-    color: primaryPurple.withOpacity(0.3),
+    color: primary.withOpacity(0.3),
     width: 1,
   );
-  
-  // ThemeData
+
+  // ── ThemeData ───────────────────────────────────────────────────────────────
   static ThemeData get darkTheme => ThemeData(
     brightness: Brightness.dark,
-    primaryColor: primaryPurple,
+    primaryColor: primary,
     scaffoldBackgroundColor: backgroundDark,
     colorScheme: const ColorScheme.dark(
-      primary: primaryPurple,
-      secondary: primaryPurple,
+      primary: primary,
+      secondary: accent,
       surface: backgroundCard,
     ),
-    fontFamily: 'Inter',
-    appBarTheme: const AppBarTheme(
+    // Use a distinctly smooth/rounded font instead of Inter or system font
+    fontFamily: GoogleFonts.nunito().fontFamily,
+    textTheme: GoogleFonts.nunitoTextTheme(
+      ThemeData(brightness: Brightness.dark).textTheme,
+    ),
+    appBarTheme: AppBarTheme(
       backgroundColor: backgroundDark,
       elevation: 0,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
+      centerTitle: false,
+      titleTextStyle: GoogleFonts.nunito(
         color: textPrimary,
         fontSize: 18,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.3,
       ),
-      iconTheme: IconThemeData(color: primaryPurple),
+      iconTheme: const IconThemeData(color: primary),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: primaryPurple,
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(radiusXl),
         ),
         elevation: 0,
-        textStyle: const TextStyle(
+        textStyle: GoogleFonts.nunito(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: primaryPurple,
-        textStyle: const TextStyle(
+        foregroundColor: primary,
+        textStyle: GoogleFonts.nunito(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
     ),
