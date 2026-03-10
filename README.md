@@ -75,8 +75,8 @@ rang/
 | Test      | —       | —       | —      | 18      |
 | **Total** | **106** | **119** | **87** | **312** |
 
-- Self-collected — no internet datasets used
-- Photos taken with mobile phones of real colored plastic objects
+- 80% self-collected datasets used
+- Photos taken with mobile phones of real colored objects
 - Varied lighting, angles, and backgrounds
 - No data augmentation applied
 
