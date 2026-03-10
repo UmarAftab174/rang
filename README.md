@@ -248,17 +248,6 @@ app/build/app/outputs/flutter-apk/app-release.apk
 
 - ✅ No pretrained models (no ImageNet, no transfer learning)
 - ✅ No if/else classification logic
-- ✅ Dataset collected by team members (not from internet)
+- ✅ Dataset collected by team members
 - ✅ CNN trained entirely from scratch
 - ✅ On-device inference (no internet/server required)
-- ✅ Submitted as PDF on LMS
-
----
-
-## Submission
-
-- **Deadline:** 15-03-2026
-- **Course:** AIC-401 Deep Learning
-- **University:** Bahria University
-- **Semester:** 06 — Spring 2026
-- **Submission format:** PDF on LMS
